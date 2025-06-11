@@ -25,3 +25,10 @@
     "tailwindcss": "^4"
   }
 }
+{
+  "overrides": {
+    "react-beautiful-dnd": {
+      "react": "$react"
+    }
+  }
+}
