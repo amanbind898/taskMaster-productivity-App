@@ -78,7 +78,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-8">
             <div className="group p-8 bg-gray-50 dark:bg-gray-700 rounded-2xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 dark:hover:from-gray-600 dark:hover:to-gray-600 transition-all duration-300">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <CheckCircleIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
@@ -125,26 +125,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-4xl font-bold text-white mb-6">
-            Ready to boost your productivity?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join thousands of users who have transformed their workflow with our task management platform.
-          </p>
-          {!session && (
-            <Link
-              href="/signup"
-              className="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
-            >
-              Start Free Today
-              <ArrowRightIcon className="ml-2 h-5 w-5" />
-            </Link>
-          )}
-        </div>
-      </section>
+
 
      
     </div>

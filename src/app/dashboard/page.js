@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import { useState, useMemo, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { PlusIcon, MagnifyingGlassIcon, TrashIcon, PencilIcon, CalendarIcon, BellIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
+import { PlusIcon, MagnifyingGlassIcon, TrashIcon, PencilIcon, CalendarIcon, BellIcon, CheckCircleIcon, TagIcon } from "@heroicons/react/24/outline";
 
 const DEFAULT_CATEGORIES = ["Work", "Personal", "Study","Shopping", "General"];
 const PRIORITIES = ["High", "Medium", "Low"];
@@ -24,12 +24,15 @@ function isOverdue(task) {
   return due < now;
 }
 
-
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  
+  // Custom categories state
+  const [customCategories, setCustomCategories] = useState([]);
+  
   const [filters, setFilters] = useState({
     search: "",
     category: "All",
@@ -38,8 +41,24 @@ export default function Dashboard() {
     due: "All",
   });
   const [showModal, setShowModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
- 
+  // Load custom categories from localStorage on component mount
+  useEffect(() => {
+    const savedCategories = localStorage.getItem('customCategories');
+    if (savedCategories) {
+      setCustomCategories(JSON.parse(savedCategories));
+    }
+  }, []);
+
+  // Save custom categories to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('customCategories', JSON.stringify(customCategories));
+  }, [customCategories]);
+
+  // Combine default and custom categories
+  const allCategories = [...DEFAULT_CATEGORIES, ...customCategories];
+
   useEffect(() => {
     if (status === "loading") return; 
     
@@ -84,7 +103,34 @@ export default function Dashboard() {
     }
   };
 
-  // Add task function
+  // Add custom category function
+  const handleAddCategory = (categoryName) => {
+    const trimmedName = categoryName.trim();
+    if (trimmedName && !allCategories.includes(trimmedName)) {
+      setCustomCategories(prev => [...prev, trimmedName]);
+      return true;
+    }
+    return false;
+  };
+
+  // Delete custom category function
+  const handleDeleteCategory = (categoryName) => {
+    if (DEFAULT_CATEGORIES.includes(categoryName)) {
+      alert("Cannot delete default categories");
+      return;
+    }
+    
+    const hasTasksWithCategory = tasks.some(task => task.category === categoryName);
+    if (hasTasksWithCategory) {
+      if (!confirm(`There are tasks in the "${categoryName}" category. Are you sure you want to delete it? Tasks will keep their category.`)) {
+        return;
+      }
+    }
+    
+    setCustomCategories(prev => prev.filter(cat => cat !== categoryName));
+  };
+
+  // Add task function (unchanged)
   const handleAddTask = async (taskData) => {
     try {
       setError("");
@@ -122,7 +168,7 @@ export default function Dashboard() {
     }
   };
 
-  // Toggle task completion
+  // Toggle task completion (unchanged)
   const handleToggleComplete = async (id) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
@@ -158,7 +204,7 @@ export default function Dashboard() {
     }
   };
 
-  // Delete task function
+  // Delete task function (unchanged)
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
@@ -180,7 +226,7 @@ export default function Dashboard() {
     }
   };
 
-  // Filtered tasks
+  // Filtered tasks (updated to use allCategories)
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
       // Search
@@ -210,20 +256,19 @@ export default function Dashboard() {
     });
   }, [tasks, filters]);
 
-  // Statistics
+  // Statistics (unchanged)
   const completedCount = tasks.filter(t => t.completed).length;
   const todayCount = tasks.filter(t => new Date(t.dueDate).toDateString() === new Date().toDateString()).length;
   const overdueCount = tasks.filter(t => isOverdue(t)).length;
   const totalTasks = tasks.length;
 
-  // Get categories from tasks
-  const availableCategories = [...new Set(tasks.map(t => t.category))];
-  const tasksByCategory = DEFAULT_CATEGORIES.map(cat => ({
+  // Get categories from tasks (updated to include all categories)
+  const tasksByCategory = allCategories.map(cat => ({
     category: cat,
     count: tasks.filter(t => t.category === cat).length,
   })).filter(item => item.count > 0);
 
-  // Loading state
+  // Loading and authentication states (unchanged)
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -235,7 +280,6 @@ export default function Dashboard() {
     );
   }
 
-  // Authentication check
   if (status === "unauthenticated") {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -252,6 +296,8 @@ export default function Dashboard() {
       {/* Sidebar/Filters */}
       <aside className="w-full max-w-xs bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 p-6 hidden md:block">
         <h2 className="text-lg font-bold mb-4">Filters</h2>
+        
+        {/* Search */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">🔍 Search</label>
           <div className="relative">
@@ -265,17 +311,52 @@ export default function Dashboard() {
             />
           </div>
         </div>
+
+        {/* Category Management Section */}
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">📂 Category</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium">📂 Category</label>
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded"
+              title="Add new category"
+            >
+              <PlusIcon className="h-3 w-3 inline mr-1" />
+              Add
+            </button>
+          </div>
           <select
             value={filters.category}
             onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}
             className="w-full border border-gray-300 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-800 py-2 px-3"
           >
             <option value="All">All</option>
-            {DEFAULT_CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            {allCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
+
+        {/* Custom Categories List */}
+        {customCategories.length > 0 && (
+          <div className="mb-4">
+            <div className="text-xs text-gray-500 mb-2">Custom Categories:</div>
+            <div className="space-y-1">
+              {customCategories.map(cat => (
+                <div key={cat} className="flex items-center justify-between text-xs bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+                  <span className="truncate">{cat}</span>
+                  <button
+                    onClick={() => handleDeleteCategory(cat)}
+                    className="text-red-500 hover:text-red-700 ml-2"
+                    title="Delete category"
+                  >
+                    <TrashIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Other filters remain the same */}
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">✅ Status</label>
           <select
@@ -309,7 +390,7 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* Main Content */}
+      {/* Main Content - Rest remains the same */}
       <main className="flex-1 p-6">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
@@ -371,8 +452,9 @@ export default function Dashboard() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {tasksByCategory.map(({ category, count }) => (
                   <div key={category} className="flex items-center gap-2 text-sm">
-                    <span className="inline-block w-2 h-2 rounded-full bg-blue-400"></span>
+                    <span className={`inline-block w-2 h-2 rounded-full ${customCategories.includes(category) ? 'bg-purple-400' : 'bg-blue-400'}`}></span>
                     {category}: <span className="font-bold">{count}</span>
+                    {customCategories.includes(category) && <TagIcon className="h-3 w-3 text-purple-500" title="Custom category" />}
                   </div>
                 ))}
               </div>
@@ -380,7 +462,7 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* Task List */}
+        {/* Task List - Rest remains the same */}
         <section>
           {filteredTasks.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
@@ -416,8 +498,9 @@ export default function Dashboard() {
                         <span className={`px-2 py-1 rounded ${getPriorityColor(task.priority)}`}>
                           🚩 {task.priority}
                         </span>
-                        <span className="px-2 py-1 rounded bg-blue-100 text-blue-700">
+                        <span className={`px-2 py-1 rounded ${customCategories.includes(task.category) ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
                           📂 {task.category}
+                          {customCategories.includes(task.category) && <TagIcon className="h-3 w-3 inline ml-1" />}
                         </span>
                         <span className="flex items-center gap-1 px-2 py-1 rounded bg-gray-100 text-gray-700">
                           <CalendarIcon className="h-4 w-4" />
@@ -456,14 +539,23 @@ export default function Dashboard() {
         <AddTaskModal
           onClose={() => setShowModal(false)}
           onAdd={handleAddTask}
-          categories={DEFAULT_CATEGORIES}
+          categories={allCategories}
+        />
+      )}
+
+      {/* Add Category Modal */}
+      {showCategoryModal && (
+        <AddCategoryModal
+          onClose={() => setShowCategoryModal(false)}
+          onAdd={handleAddCategory}
+          existingCategories={allCategories}
         />
       )}
     </div>
   );
 }
 
-// Updated Modal component
+// Updated Modal component to use allCategories
 function AddTaskModal({ onClose, onAdd, categories }) {
   const [form, setForm] = useState({
     title: "",
@@ -526,20 +618,29 @@ function AddTaskModal({ onClose, onAdd, categories }) {
             />
           </div>
           <div className="flex gap-2">
-            <select 
-              name="category" 
-              value={form.category} 
-              onChange={handleChange} 
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              disabled={loading}
-            >
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-            </select>
+           <select 
+  name="category" 
+  value={form.category} 
+  onChange={handleChange} 
+  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white bg-white dark:bg-gray-800"
+  disabled={loading}
+>
+  {categories.map(cat => (
+    <option 
+      key={cat} 
+      value={cat}
+      className="text-gray-900 dark:text-white bg-white dark:bg-gray-800"
+    >
+      {cat}
+    </option>
+  ))}
+</select>
+
             <select 
               name="priority" 
               value={form.priority} 
               onChange={handleChange} 
-              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-white bg-white dark:bg-gray-800"
               disabled={loading}
             >
               {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
@@ -587,6 +688,81 @@ function AddTaskModal({ onClose, onAdd, categories }) {
               ) : (
                 'Save Task'
               )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AddCategoryModal({ onClose, onAdd, existingCategories }) {
+  const [categoryName, setCategoryName] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const trimmedName = categoryName.trim();
+    
+    if (!trimmedName) {
+      setError("Category name is required");
+      return;
+    }
+    
+    if (existingCategories.includes(trimmedName)) {
+      setError("Category already exists");
+      return;
+    }
+    
+    if (trimmedName.length > 20) {
+      setError("Category name must be 20 characters or less");
+      return;
+    }
+    
+    const success = onAdd(trimmedName);
+    if (success) {
+      onClose();
+    } else {
+      setError("Failed to add category");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-sm shadow-xl">
+        <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white flex items-center">
+          <TagIcon className="h-5 w-5 mr-2" />
+          Add Custom Category
+        </h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <input
+              type="text"
+              value={categoryName}
+              onChange={e => setCategoryName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Category name"
+              maxLength="20"
+              required
+            />
+            <div className="text-xs text-gray-500 mt-1">
+              {categoryName.length}/20 characters
+            </div>
+          </div>
+          {error && <div className="text-red-600 text-sm bg-red-50 p-2 rounded">{error}</div>}
+          <div className="flex justify-end gap-2">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            >
+              Add Category
             </button>
           </div>
         </form>

@@ -130,14 +130,7 @@ export default function Login() {
             </p>
           </div>
 
-          <div className="mt-4 text-center">
-            <Link
-              href="/forgot-password"
-              className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
-            >
-              Forgot Password?
-            </Link>
-          </div>
+       
         </div>
       </div>
     </div>
