@@ -45,12 +45,7 @@ export default function Navbar() {
               >
                 Dashboard
               </Link>
-              <Link 
-                href="/profile" 
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded transition-colors"
-              >
-                Profile
-              </Link>
+          
               <button
                 onClick={() => signOut({ callbackUrl: '/' })}
                 className="text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 rounded transition-colors"
