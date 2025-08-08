@@ -204,7 +204,7 @@ export default function Dashboard() {
     }
   };
 
-  // Delete task function (unchanged)
+  // Delete task function 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
@@ -268,7 +268,7 @@ export default function Dashboard() {
     count: tasks.filter(t => t.category === cat).length,
   })).filter(item => item.count > 0);
 
-  // Loading and authentication states (unchanged)
+  // Loading and authentication states 
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -338,7 +338,7 @@ export default function Dashboard() {
         {/* Custom Categories List */}
         {customCategories.length > 0 && (
           <div className="mb-4">
-            <div className="text-xs text-gray-500 mb-2">Custom Categories:</div>
+            <div className="text-xs dark:text-gray-500 mb-2">Custom Categories:</div>
             <div className="space-y-1">
               {customCategories.map(cat => (
                 <div key={cat} className="flex items-center justify-between text-xs bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
